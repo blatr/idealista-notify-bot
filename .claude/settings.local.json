@@ -1,0 +1,12 @@
+{
+  "permissions": {
+    "allow": [
+      "WebFetch(domain:www.scraperapi.com)",
+      "WebSearch",
+      "WebFetch(domain:medium.com)",
+      "WebFetch(domain:github.com)",
+      "WebFetch(domain:developers.idealista.com)",
+      "WebFetch(domain:scrapfly.io)"
+    ]
+  }
+}
