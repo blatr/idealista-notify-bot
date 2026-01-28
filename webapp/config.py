@@ -14,7 +14,7 @@ HOST = os.getenv("WEB_HOST", "0.0.0.0")
 PORT = int(os.getenv("WEB_PORT", "8000"))
 DEBUG = os.getenv("DEBUG", "false").lower() == "true"
 
-# Kanban stages configuration
+# Kanban stages configuration (UI-visible stages only)
 STAGES = [
     {"value": "to_be_communicated", "label": "To Be Communicated", "color": "blue"},
     {"value": "message_sent", "label": "Message Sent", "color": "yellow"},
@@ -24,4 +24,7 @@ STAGES = [
     {"value": "rejected", "label": "Rejected", "color": "red"},
 ]
 
-STAGE_VALUES = [s["value"] for s in STAGES]
+# Stages allowed in data layer (includes internal-only stages)
+INTERNAL_STAGES = ["preliminary"]
+
+STAGE_VALUES = [s["value"] for s in STAGES] + INTERNAL_STAGES

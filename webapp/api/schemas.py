@@ -21,7 +21,7 @@ class ListingBase(BaseModel):
 class ListingCreate(ListingBase):
     """Schema for creating a new listing."""
 
-    stage: Optional[str] = "to_be_communicated"
+    stage: Optional[str] = "preliminary"
     source: Optional[str] = "manual"
 
 

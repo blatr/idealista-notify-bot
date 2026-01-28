@@ -23,7 +23,7 @@ class Listing(Base):
     thumbnail = Column(String)
 
     # CRM fields
-    stage = Column(String, default="to_be_communicated", index=True)
+    stage = Column(String, default="preliminary", index=True)
     notes = Column(Text)
     position = Column(Integer, default=0)
     priority = Column(Integer, default=0)  # 0-10, higher = more important
