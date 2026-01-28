@@ -3,6 +3,7 @@
 .venv/
 venv/
 env/
+data/listings.db
 
 # Python
 __pycache__/
