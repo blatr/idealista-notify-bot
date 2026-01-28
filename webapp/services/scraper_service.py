@@ -2,6 +2,7 @@ import re
 from bs4 import BeautifulSoup
 from scrapfly import ScrapflyClient, ScrapeConfig
 from webapp.config import SCRAPFLY_API_KEY
+from idealista.url_utils import strip_ru_prefix
 
 scrapfly = ScrapflyClient(key=SCRAPFLY_API_KEY)
 
@@ -35,6 +36,8 @@ async def parse_idealista_url(url: str) -> dict:
     Fetch and parse a single Idealista listing URL.
     Returns dict with listing fields.
     """
+    url = strip_ru_prefix(url)
+
     if not url or "idealista." not in url:
         raise ValueError("Invalid Idealista URL")
 

@@ -21,6 +21,7 @@ from idealista.scraper import (
     scrape_all_pages,
     Listing,
 )
+from idealista.url_utils import strip_ru_prefix
 from webapp.services.scraper_service import parse_idealista_url
 
 # Database integration for web CRM
@@ -51,9 +52,10 @@ def save_listing_to_db(listing: Listing) -> DBListing | None:
 
     db = SessionLocal()
     try:
+        clean_url = strip_ru_prefix(listing.url)
         # Check if already exists
         existing = db.query(DBListing).filter(
-            DBListing.idealista_url == listing.url
+            DBListing.idealista_url == clean_url
         ).first()
 
         if existing:
@@ -65,7 +67,7 @@ def save_listing_to_db(listing: Listing) -> DBListing | None:
 
         # Create new listing
         db_listing = DBListing(
-            idealista_url=listing.url,
+            idealista_url=clean_url,
             title=listing.title,
             price=listing.price,
             price_value=listing.price_value,
@@ -126,7 +128,7 @@ def filter_new_listings(listings: list[Listing]) -> list[Listing]:
     if not DB_AVAILABLE or not listings:
         return listings
 
-    urls = [listing.url for listing in listings if listing.url]
+    urls = [strip_ru_prefix(listing.url) for listing in listings if listing.url]
     logger.info(f"{urls}")
     if not urls:
         return listings
@@ -144,7 +146,11 @@ def filter_new_listings(listings: list[Listing]) -> list[Listing]:
     finally:
         db.close()
 
-    return [listing for listing in listings if listing.url not in existing_urls]
+    return [
+        listing
+        for listing in listings
+        if strip_ru_prefix(listing.url) not in existing_urls
+    ]
 
 
 async def create_listing_from_url(url: str) -> tuple[str, DBListing | None]:
@@ -152,15 +158,16 @@ async def create_listing_from_url(url: str) -> tuple[str, DBListing | None]:
     if not DB_AVAILABLE:
         return "db_unavailable", None
 
+    clean_url = strip_ru_prefix(url)
     try:
-        listing_data = await parse_idealista_url(url)
+        listing_data = await parse_idealista_url(clean_url)
     except Exception as exc:
         logger.error(f"Failed to parse listing URL {url}: {exc}")
         return "scrape_failed", None
 
     db = SessionLocal()
     try:
-        existing = db.query(DBListing).filter(DBListing.idealista_url == url).first()
+        existing = db.query(DBListing).filter(DBListing.idealista_url == clean_url).first()
         max_pos = db.query(func.max(DBListing.position)).filter(
             DBListing.stage == STAGE_TO_BE_COMMUNICATED
         ).scalar() or 0
@@ -185,7 +192,7 @@ async def create_listing_from_url(url: str) -> tuple[str, DBListing | None]:
             floor=listing_data.get("floor"),
             description=listing_data.get("description"),
             thumbnail=listing_data.get("thumbnail"),
-            idealista_url=listing_data.get("idealista_url") or url,
+            idealista_url=clean_url,
             stage=STAGE_TO_BE_COMMUNICATED,
             position=max_pos + 1,
             source="telegram",

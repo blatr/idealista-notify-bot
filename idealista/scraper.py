@@ -17,6 +17,7 @@ from config import (
     SCRAPFLY_API_KEY,
     SEEN_LISTINGS_FILE,
 )
+from idealista.url_utils import strip_ru_prefix
 
 logging.basicConfig(
     level=logging.INFO,
@@ -174,6 +175,7 @@ def _parse_listing(article, base_url: str) -> Listing | None:
         if not href:
             return None
         href = urljoin(base_url, href)
+        href = strip_ru_prefix(href)
 
         title = link_elem.get_text(strip=True)
 

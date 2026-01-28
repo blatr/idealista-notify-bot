@@ -16,6 +16,7 @@ from webapp.api.schemas import (
 )
 from webapp.services.listing_service import ListingService
 from webapp.services.scraper_service import ScraperService
+from idealista.url_utils import strip_ru_prefix
 
 router = APIRouter()
 
@@ -125,9 +126,10 @@ async def reorder_column(
 async def import_from_url(data: UrlImportRequest, db: Session = Depends(get_db)):
     """Parse an Idealista URL and create a new listing."""
     service = ListingService(db)
+    clean_url = strip_ru_prefix(data.url)
 
     # Check for duplicate
-    existing = service.get_by_url(data.url)
+    existing = service.get_by_url(clean_url) or service.get_by_url(data.url)
     if existing and not data.force:
         raise HTTPException(
             status_code=400,
@@ -136,10 +138,11 @@ async def import_from_url(data: UrlImportRequest, db: Session = Depends(get_db))
 
     try:
         # Parse the URL
-        parsed = await ScraperService.parse_url(data.url)
+        parsed = await ScraperService.parse_url(clean_url)
         if existing:
             for key, value in parsed.items():
                 setattr(existing, key, value)
+            existing.idealista_url = clean_url
             if existing.stage != "to_be_communicated":
                 max_pos = db.query(func.max(Listing.position)).filter(
                     Listing.stage == "to_be_communicated"
@@ -157,6 +160,7 @@ async def import_from_url(data: UrlImportRequest, db: Session = Depends(get_db))
             source="url_import",
             stage="to_be_communicated",
         )
+        listing_data.idealista_url = clean_url
         listing = service.create(listing_data)
         return listing
     except Exception as e:
