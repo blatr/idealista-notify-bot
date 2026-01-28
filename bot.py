@@ -161,12 +161,15 @@ async def create_listing_from_url(url: str) -> tuple[str, DBListing | None]:
         ).scalar() or 0
 
         if existing:
+            for key, value in listing_data.items():
+                setattr(existing, key, value)
             if existing.stage != STAGE_TO_BE_COMMUNICATED:
                 existing.stage = STAGE_TO_BE_COMMUNICATED
                 existing.position = max_pos + 1
-                db.commit()
-                return "promoted", existing
-            return "exists", existing
+            existing.source = "telegram"
+            db.commit()
+            db.refresh(existing)
+            return "updated", existing
 
         listing = DBListing(
             title=listing_data.get("title"),
@@ -370,10 +373,8 @@ async def _handle_message(bot: Bot, message, lock: asyncio.Lock = None) -> None:
         if status == "created":
             title = listing.title if listing else "Listing"
             await bot.send_message(chat_id=chat_id, text=f"Added to CRM:\n{title}")
-        elif status == "promoted":
-            await bot.send_message(chat_id=chat_id, text="Moved to To Be Communicated.")
-        elif status == "exists":
-            await bot.send_message(chat_id=chat_id, text="Listing already exists.")
+        elif status == "updated":
+            await bot.send_message(chat_id=chat_id, text="Updated and moved to To Be Communicated.")
         elif status == "db_unavailable":
             await bot.send_message(chat_id=chat_id, text="Database not available.")
         elif status == "scrape_failed":
