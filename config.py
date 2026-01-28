@@ -39,6 +39,7 @@ EXCLUDED_FLOORS = []
 # =============================================================================
 DATA_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "data")
 SEEN_LISTINGS_FILE = os.path.join(DATA_DIR, "seen_links.txt")
+WATCH_URLS_FILE = os.getenv("WATCH_URLS_FILE") or os.path.join(DATA_DIR, "watch_urls.txt")
 
 # =============================================================================
 # Scraping Settings

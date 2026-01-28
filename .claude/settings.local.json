@@ -6,7 +6,13 @@
       "WebFetch(domain:medium.com)",
       "WebFetch(domain:github.com)",
       "WebFetch(domain:developers.idealista.com)",
-      "WebFetch(domain:scrapfly.io)"
+      "WebFetch(domain:scrapfly.io)",
+      "Bash(git -C \"/Users/max/Documents/Documents_max/Projects/IdealistaBot\" log --oneline --all)",
+      "Bash(timeout 5 python:*)",
+      "Bash(python:*)",
+      "Bash(uvicorn:*)",
+      "Bash(curl:*)",
+      "Bash(pkill:*)"
     ]
   }
 }

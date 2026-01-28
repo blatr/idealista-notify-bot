@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Apartment CRM</title>
+
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- htmx -->
+    <script src="https://unpkg.com/htmx.org@1.9.10"></script>
+
+    <!-- Alpine.js -->
+    <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
+
+    <!-- SortableJS -->
+    <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>
+
+    <style>
+        /* Custom scrollbar for columns */
+        .column-cards::-webkit-scrollbar {
+            width: 6px;
+        }
+        .column-cards::-webkit-scrollbar-track {
+            background: #e5e7eb;
+            border-radius: 3px;
+        }
+        .column-cards::-webkit-scrollbar-thumb {
+            background: #9ca3af;
+            border-radius: 3px;
+        }
+
+        /* Drag ghost styling */
+        .sortable-ghost {
+            opacity: 0.4;
+        }
+        .sortable-drag {
+            opacity: 1;
+        }
+
+        /* Card hover effect */
+        .listing-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        }
+
+        /* Modal backdrop */
+        .modal-backdrop {
+            background-color: rgba(0, 0, 0, 0.5);
+        }
+
+        /* Hide elements until Alpine.js initializes */
+        [x-cloak] {
+            display: none !important;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 min-h-screen">
+    {% block content %}{% endblock %}
+
+    <!-- Modal Container -->
+    <div id="modal-container"
+         class="fixed inset-0 z-50"
+         x-data="{ open: false }"
+         x-show="open"
+         x-cloak
+         @open-modal.window="open = true"
+         @close-modal.window="open = false"
+         @keydown.escape.window="open = false">
+        <div class="modal-backdrop fixed inset-0" @click="open = false"></div>
+        <div class="fixed inset-0 flex items-center justify-center p-4 pointer-events-none">
+            <div id="modal-content" class="pointer-events-auto"></div>
+        </div>
+    </div>
+
+    <!-- Toast Container -->
+    <div id="toast-container" class="fixed bottom-4 right-4 z-50 space-y-2"></div>
+
+    <script>
+        // Toast notification function
+        function showToast(message, type = 'success') {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            const bgColor = type === 'success' ? 'bg-green-500' : 'bg-red-500';
+            toast.className = `${bgColor} text-white px-4 py-2 rounded shadow-lg transition-opacity duration-300`;
+            toast.textContent = message;
+            container.appendChild(toast);
+
+            setTimeout(() => {
+                toast.classList.add('opacity-0');
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+
+        // htmx event handlers
+        document.body.addEventListener('htmx:afterSwap', function(event) {
+            if (event.detail.target.id === 'modal-content') {
+                window.dispatchEvent(new CustomEvent('open-modal'));
+            }
+        });
+
+        // Close modal function
+        function closeModal() {
+            window.dispatchEvent(new CustomEvent('close-modal'));
+            document.getElementById('modal-content').innerHTML = '';
+        }
+    </script>
+
+    {% block scripts %}{% endblock %}
+</body>
+</html>

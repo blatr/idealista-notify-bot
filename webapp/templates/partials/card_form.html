@@ -1,0 +1,163 @@
+<div class="bg-white rounded-lg shadow-xl max-w-lg w-full max-h-[90vh] overflow-y-auto" @click.stop>
+    <!-- Header -->
+    <div class="sticky top-0 bg-white border-b px-6 py-4 flex items-center justify-between">
+        <h2 class="text-lg font-semibold text-gray-800">Add New Listing</h2>
+        <button onclick="closeModal()" class="text-gray-400 hover:text-gray-600">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+            </svg>
+        </button>
+    </div>
+
+    <form id="create-listing-form"
+          onsubmit="submitListingForm(event)"
+          class="p-6 space-y-4">
+
+        <!-- Title -->
+        <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Title *</label>
+            <input type="text"
+                   name="title"
+                   required
+                   class="w-full border rounded px-3 py-2"
+                   placeholder="e.g., Piso en Eixample">
+        </div>
+
+        <!-- Price -->
+        <div class="grid grid-cols-2 gap-4">
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Price</label>
+                <input type="text"
+                       name="price"
+                       class="w-full border rounded px-3 py-2"
+                       placeholder="e.g., 1,500 EUR">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Price (numeric)</label>
+                <input type="number"
+                       name="price_value"
+                       class="w-full border rounded px-3 py-2"
+                       placeholder="1500">
+            </div>
+        </div>
+
+        <!-- Details Row -->
+        <div class="grid grid-cols-3 gap-4">
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Rooms</label>
+                <input type="text"
+                       name="rooms"
+                       class="w-full border rounded px-3 py-2"
+                       placeholder="e.g., 2 hab.">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Size</label>
+                <input type="text"
+                       name="size"
+                       class="w-full border rounded px-3 py-2"
+                       placeholder="e.g., 80 m2">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Floor</label>
+                <input type="text"
+                       name="floor"
+                       class="w-full border rounded px-3 py-2"
+                       placeholder="e.g., 3a planta">
+            </div>
+        </div>
+
+        <!-- Idealista URL -->
+        <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Idealista URL</label>
+            <input type="url"
+                   name="idealista_url"
+                   class="w-full border rounded px-3 py-2"
+                   placeholder="https://www.idealista.com/inmueble/...">
+        </div>
+
+        <!-- Thumbnail URL -->
+        <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Thumbnail URL</label>
+            <input type="url"
+                   name="thumbnail"
+                   class="w-full border rounded px-3 py-2"
+                   placeholder="https://...">
+        </div>
+
+        <!-- Description -->
+        <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Description</label>
+            <textarea name="description"
+                      class="w-full border rounded px-3 py-2 h-24 resize-none"
+                      placeholder="Property description..."></textarea>
+        </div>
+
+        <!-- Notes -->
+        <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Notes</label>
+            <textarea name="notes"
+                      class="w-full border rounded px-3 py-2 h-20 resize-none"
+                      placeholder="Your personal notes..."></textarea>
+        </div>
+
+        <!-- Stage -->
+        <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Initial Stage</label>
+            <select name="stage" class="w-full border rounded px-3 py-2">
+                {% for stage in stages %}
+                <option value="{{ stage.value }}">{{ stage.label }}</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <!-- Submit -->
+        <div class="flex justify-end gap-3 pt-4 border-t">
+            <button type="button"
+                    onclick="closeModal()"
+                    class="px-4 py-2 bg-gray-200 text-gray-700 rounded hover:bg-gray-300">
+                Cancel
+            </button>
+            <button type="submit"
+                    class="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600">
+                Create Listing
+            </button>
+        </div>
+    </form>
+
+    <script>
+    function submitListingForm(event) {
+        event.preventDefault();
+        var form = document.getElementById('create-listing-form');
+        var formData = new FormData(form);
+        var data = {};
+        formData.forEach(function(value, key) {
+            if (value) {
+                if (key === 'price_value') {
+                    data[key] = parseFloat(value) || 0;
+                } else {
+                    data[key] = value;
+                }
+            }
+        });
+
+        fetch('{{ base_url }}/api/listings', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify(data)
+        })
+        .then(function(r) {
+            if (r.ok) {
+                closeModal();
+                location.reload();
+            } else {
+                r.json().then(function(err) {
+                    showToast(err.detail || 'Error creating listing', 'error');
+                });
+            }
+        })
+        .catch(function() {
+            showToast('Network error', 'error');
+        });
+    }
+    </script>
+</div>

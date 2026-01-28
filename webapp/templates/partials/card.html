@@ -1,0 +1,68 @@
+<div class="listing-card bg-white rounded-lg shadow p-3 mb-2 cursor-grab transition-all duration-200"
+     data-id="{{ listing.id }}"
+     hx-get="{{ base_url }}/partials/card-detail/{{ listing.id }}"
+     hx-target="#modal-content"
+     hx-swap="innerHTML"
+     hx-trigger="click">
+
+    <!-- Thumbnail -->
+    {% if listing.thumbnail %}
+    <div class="relative mb-2 -mx-3 -mt-3">
+        <img src="{{ listing.thumbnail }}"
+             alt="{{ listing.title }}"
+             class="w-full h-32 object-cover rounded-t-lg"
+             loading="lazy"
+             onerror="this.style.display='none'">
+    </div>
+    {% endif %}
+
+    <!-- Title -->
+    <h3 class="font-semibold text-sm text-gray-800 line-clamp-2 mb-1">
+        {{ listing.title }}
+    </h3>
+
+    <!-- Price -->
+    <p class="text-lg font-bold text-green-600 mb-2">
+        {{ listing.price or 'N/A' }}
+    </p>
+
+    <!-- Details -->
+    <div class="flex flex-wrap gap-2 text-xs text-gray-500 mb-2">
+        {% if listing.rooms %}
+        <span class="bg-gray-100 px-2 py-0.5 rounded">{{ listing.rooms }}</span>
+        {% endif %}
+        {% if listing.size %}
+        <span class="bg-gray-100 px-2 py-0.5 rounded">{{ listing.size }}</span>
+        {% endif %}
+        {% if listing.floor %}
+        <span class="bg-gray-100 px-2 py-0.5 rounded">{{ listing.floor }}</span>
+        {% endif %}
+    </div>
+
+    <!-- Notes indicator -->
+    {% if listing.notes %}
+    <div class="text-xs bg-yellow-50 border border-yellow-200 p-1.5 rounded text-yellow-800 line-clamp-2">
+        {{ listing.notes }}
+    </div>
+    {% endif %}
+
+    <!-- Footer: Source and Priority -->
+    <div class="mt-2 flex justify-between items-center">
+        <span class="text-xs px-1.5 py-0.5 rounded
+            {% if listing.source == 'telegram' %}bg-blue-100 text-blue-600
+            {% elif listing.source == 'url_import' %}bg-purple-100 text-purple-600
+            {% else %}bg-gray-100 text-gray-500{% endif %}">
+            {{ listing.source }}
+        </span>
+        {% if listing.priority and listing.priority > 0 %}
+        <span class="text-xs font-bold px-2 py-0.5 rounded
+            {% if listing.priority >= 9 %}bg-red-500 text-white
+            {% elif listing.priority >= 7 %}bg-orange-500 text-white
+            {% elif listing.priority >= 5 %}bg-yellow-400 text-gray-800
+            {% elif listing.priority >= 3 %}bg-green-400 text-gray-800
+            {% else %}bg-gray-300 text-gray-700{% endif %}">
+            P{{ listing.priority }}
+        </span>
+        {% endif %}
+    </div>
+</div>

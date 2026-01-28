@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="min-h-screen flex flex-col">
+    <!-- Header -->
+    <header class="bg-white shadow-sm border-b border-gray-200 px-4 py-3">
+        <div class="flex items-center justify-between">
+            <h1 class="text-xl font-bold text-gray-800">Apartment CRM</h1>
+            <div class="flex gap-2">
+                <button
+                    hx-get="{{ base_url }}/partials/import-form"
+                    hx-target="#modal-content"
+                    hx-swap="innerHTML"
+                    class="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition flex items-center gap-2">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"></path>
+                    </svg>
+                    Import URL
+                </button>
+                <button
+                    hx-get="{{ base_url }}/partials/card-form"
+                    hx-target="#modal-content"
+                    hx-swap="innerHTML"
+                    class="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600 transition flex items-center gap-2">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+                    </svg>
+                    Add Card
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Kanban Board -->
+    <div class="flex-1 overflow-x-auto p-4">
+        <div class="flex gap-4 h-full min-h-[calc(100vh-100px)]">
+            {% for stage in stages %}
+            <div class="flex-shrink-0 w-80 flex flex-col bg-gray-200 rounded-lg">
+                <!-- Column Header -->
+                <div class="p-3 border-b border-gray-300">
+                    <div class="flex items-center justify-between">
+                        <h2 class="font-semibold text-gray-700">{{ stage.label }}</h2>
+                        <span class="bg-gray-300 text-gray-600 text-sm px-2 py-0.5 rounded-full"
+                              id="count-{{ stage.value }}">
+                            {{ columns[stage.value]|length }}
+                        </span>
+                    </div>
+                </div>
+
+                <!-- Cards Container -->
+                <div class="flex-1 p-2 overflow-y-auto column-cards sortable-column"
+                     data-stage="{{ stage.value }}"
+                     id="column-{{ stage.value }}">
+                    {% for listing in columns[stage.value] %}
+                    {% include "partials/card.html" %}
+                    {% endfor %}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>var BASE_URL = '{{ base_url }}';</script>
+<script src="{{ base_url }}/static/js/board.js"></script>
+{% endblock %}
