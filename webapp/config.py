@@ -18,6 +18,7 @@ DEBUG = os.getenv("DEBUG", "false").lower() == "true"
 STAGES = [
     {"value": "to_be_communicated", "label": "To Be Communicated", "color": "blue"},
     {"value": "message_sent", "label": "Message Sent", "color": "yellow"},
+    {"value": "waiting_reply", "label": "Waiting Reply", "color": "amber"},
     {"value": "called_by_phone", "label": "Called by Phone", "color": "purple"},
     {"value": "in_progress", "label": "In Progress", "color": "orange"},
     {"value": "agreed_on_viewing", "label": "Agreed on Viewing", "color": "green"},
