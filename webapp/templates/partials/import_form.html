@@ -16,7 +16,10 @@
             fetch('{{ base_url }}/api/listings/import-url', {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({url: $refs.urlInput.value})
+                body: JSON.stringify({
+                    url: $refs.urlInput.value,
+                    force: $refs.forceReimport.checked
+                })
             })
             .then(r => r.json().then(data => ({ok: r.ok, data})))
             .then(({ok, data}) => {
@@ -47,6 +50,12 @@
                    required
                    class="w-full border rounded px-3 py-2"
                    placeholder="https://www.idealista.com/inmueble/12345678/">
+        </div>
+
+        <!-- Backdoor: Force Re-import -->
+        <div class="mb-4 flex items-center gap-2 text-sm text-gray-600">
+            <input type="checkbox" x-ref="forceReimport" id="force-reimport" class="rounded border-gray-300">
+            <label for="force-reimport">Force re-import (ignore existing)</label>
         </div>
 
         <!-- Error Message -->

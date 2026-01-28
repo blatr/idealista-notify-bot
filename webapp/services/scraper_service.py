@@ -35,7 +35,7 @@ async def parse_idealista_url(url: str) -> dict:
     Fetch and parse a single Idealista listing URL.
     Returns dict with listing fields.
     """
-    if not url or "idealista.com" not in url:
+    if not url or "idealista." not in url:
         raise ValueError("Invalid Idealista URL")
 
     result = scrapfly.scrape(

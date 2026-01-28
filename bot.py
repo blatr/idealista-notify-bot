@@ -17,7 +17,11 @@ from config import (
     SCRAPE_INTERVAL_MIN,
     SCRAPE_INTERVAL_MAX,
 )
-from idealista.scraper import scrape_all_pages, load_seen_listings, Listing
+from idealista.scraper import (
+    scrape_all_pages,
+    Listing,
+)
+from webapp.services.scraper_service import parse_idealista_url
 
 # Database integration for web CRM
 try:
@@ -117,6 +121,79 @@ def update_listing_stage(listing_id: int, new_stage: str) -> str:
         db.close()
 
 
+def filter_new_listings(listings: list[Listing]) -> list[Listing]:
+    """Filter out listings already present in the DB."""
+    if not DB_AVAILABLE or not listings:
+        return listings
+
+    urls = [listing.url for listing in listings if listing.url]
+    if not urls:
+        return listings
+
+    db = SessionLocal()
+    try:
+        existing = db.query(DBListing.idealista_url).filter(
+            DBListing.idealista_url.in_(urls)
+        ).all()
+        existing_urls = {row[0] for row in existing}
+    finally:
+        db.close()
+
+    return [listing for listing in listings if listing.url not in existing_urls]
+
+
+async def create_listing_from_url(url: str) -> tuple[str, DBListing | None]:
+    """Scrape a single listing URL and create/promote it in the CRM."""
+    if not DB_AVAILABLE:
+        return "db_unavailable", None
+
+    try:
+        listing_data = await parse_idealista_url(url)
+    except Exception as exc:
+        logger.error(f"Failed to parse listing URL {url}: {exc}")
+        return "scrape_failed", None
+
+    db = SessionLocal()
+    try:
+        existing = db.query(DBListing).filter(DBListing.idealista_url == url).first()
+        max_pos = db.query(func.max(DBListing.position)).filter(
+            DBListing.stage == STAGE_TO_BE_COMMUNICATED
+        ).scalar() or 0
+
+        if existing:
+            if existing.stage != STAGE_TO_BE_COMMUNICATED:
+                existing.stage = STAGE_TO_BE_COMMUNICATED
+                existing.position = max_pos + 1
+                db.commit()
+                return "promoted", existing
+            return "exists", existing
+
+        listing = DBListing(
+            title=listing_data.get("title"),
+            price=listing_data.get("price"),
+            price_value=listing_data.get("price_value"),
+            rooms=listing_data.get("rooms"),
+            size=listing_data.get("size"),
+            floor=listing_data.get("floor"),
+            description=listing_data.get("description"),
+            thumbnail=listing_data.get("thumbnail"),
+            idealista_url=listing_data.get("idealista_url") or url,
+            stage=STAGE_TO_BE_COMMUNICATED,
+            position=max_pos + 1,
+            source="telegram",
+        )
+        db.add(listing)
+        db.commit()
+        db.refresh(listing)
+        return "created", listing
+    except Exception as exc:
+        db.rollback()
+        logger.error(f"Failed to save listing from URL: {exc}")
+        return "error", None
+    finally:
+        db.close()
+
+
 def _extract_idealista_urls(text: str) -> list[str]:
     if not text:
         return []
@@ -209,6 +286,11 @@ async def check_and_notify(
         return
 
     if listings:
+        listings = filter_new_listings(listings)
+        if not listings:
+            logger.info("No new listings (all already in DB)")
+            return
+
         logger.info(f"Found {len(listings)} new listings, sending...")
         # Save to web CRM database
         saved = []
@@ -228,8 +310,6 @@ async def run_scraper_loop(
     lock: asyncio.Lock | None = None,
 ) -> None:
     """Run periodic scraping until stop_event is set."""
-    load_seen_listings()
-
     while not stop_event.is_set():
         try:
             if lock:
@@ -265,11 +345,41 @@ async def _scrape_now(
         )
 
 
-async def _handle_message(bot: Bot, message, lock: asyncio.Lock) -> None:
+async def _handle_message(bot: Bot, message, lock: asyncio.Lock = None) -> None:
     if not message or not message.text:
         return
 
     logger.info(f"Received message: {message.text}")
+    chat_id = message.chat_id
+    urls = _extract_idealista_urls(message.text)
+    if not urls:
+        return
+
+    for url in sorted(set(urls)):
+        try:
+            if lock:
+                async with lock:
+                    status, listing = await create_listing_from_url(url)
+            else:
+                status, listing = await create_listing_from_url(url)
+        except Exception as exc:
+            logger.error(f"Failed handling URL {url}: {exc}")
+            await bot.send_message(chat_id=chat_id, text=f"Failed to import:\n{url}")
+            continue
+
+        if status == "created":
+            title = listing.title if listing else "Listing"
+            await bot.send_message(chat_id=chat_id, text=f"Added to CRM:\n{title}")
+        elif status == "promoted":
+            await bot.send_message(chat_id=chat_id, text="Moved to To Be Communicated.")
+        elif status == "exists":
+            await bot.send_message(chat_id=chat_id, text="Listing already exists.")
+        elif status == "db_unavailable":
+            await bot.send_message(chat_id=chat_id, text="Database not available.")
+        elif status == "scrape_failed":
+            await bot.send_message(chat_id=chat_id, text="Failed to parse listing URL.")
+        else:
+            await bot.send_message(chat_id=chat_id, text="Failed to save listing.")
 
 
 async def _handle_callback(bot: Bot, callback_query, lock: asyncio.Lock = None) -> None:

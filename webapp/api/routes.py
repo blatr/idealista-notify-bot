@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import HTMLResponse
 from sqlalchemy.orm import Session
+from sqlalchemy import func
 
 from webapp.database.database import get_db
 from webapp.database.models import Listing
@@ -127,7 +128,7 @@ async def import_from_url(data: UrlImportRequest, db: Session = Depends(get_db))
 
     # Check for duplicate
     existing = service.get_by_url(data.url)
-    if existing:
+    if existing and not data.force:
         raise HTTPException(
             status_code=400,
             detail=f"Listing already exists with ID {existing.id}"
@@ -136,8 +137,26 @@ async def import_from_url(data: UrlImportRequest, db: Session = Depends(get_db))
     try:
         # Parse the URL
         parsed = await ScraperService.parse_url(data.url)
+        if existing:
+            for key, value in parsed.items():
+                setattr(existing, key, value)
+            if existing.stage != "to_be_communicated":
+                max_pos = db.query(func.max(Listing.position)).filter(
+                    Listing.stage == "to_be_communicated"
+                ).scalar() or 0
+                existing.stage = "to_be_communicated"
+                existing.position = max_pos + 1
+            existing.source = "url_import"
+            db.commit()
+            db.refresh(existing)
+            return existing
+
         # Create listing
-        listing_data = ListingCreate(**parsed, source="url_import")
+        listing_data = ListingCreate(
+            **parsed,
+            source="url_import",
+            stage="to_be_communicated",
+        )
         listing = service.create(listing_data)
         return listing
     except Exception as e:

@@ -25,6 +25,6 @@ STAGES = [
 ]
 
 # Stages allowed in data layer (includes internal-only stages)
-INTERNAL_STAGES = ["preliminary"]
+INTERNAL_STAGES = ["preliminary", "deleted"]
 
 STAGE_VALUES = [s["value"] for s in STAGES] + INTERNAL_STAGES

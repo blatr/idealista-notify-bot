@@ -252,9 +252,6 @@ def scrape_listings(url: str = None) -> tuple[list[Listing], bool]:
     # Parse HTML
     soup = BeautifulSoup(result.content, "html.parser")
 
-    # Load seen URLs
-    seen_urls = load_seen_listings()
-
     # Find listings
     articles = soup.find_all("article", class_="item")
     if not articles:
@@ -270,19 +267,12 @@ def scrape_listings(url: str = None) -> tuple[list[Listing], bool]:
         if not listing:
             continue
 
-        # Skip if already seen
-        if listing.url in seen_urls:
-            continue
-
         # Apply filters
         if _should_exclude(listing):
             continue
 
         new_listings.append(listing)
-        seen_urls.add(listing.url)
 
-    # Save after parsing
-    save_seen_listings()
     logger.info(f"Found {len(new_listings)} new listings")
 
     return new_listings, False

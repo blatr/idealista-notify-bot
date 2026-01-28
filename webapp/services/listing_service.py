@@ -88,10 +88,16 @@ class ListingService:
         return True
 
     def delete(self, listing_id: int) -> bool:
-        """Delete a listing."""
+        """Soft-delete a listing by moving it to the deleted stage."""
         listing = self.get_by_id(listing_id)
         if not listing:
             return False
-        self.db.delete(listing)
+
+        max_pos = self.db.query(func.max(Listing.position)).filter(
+            Listing.stage == "deleted"
+        ).scalar() or 0
+
+        listing.stage = "deleted"
+        listing.position = max_pos + 1
         self.db.commit()
         return True

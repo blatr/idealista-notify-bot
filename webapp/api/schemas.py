@@ -73,6 +73,7 @@ class UrlImportRequest(BaseModel):
     """Schema for importing a listing from URL."""
 
     url: str
+    force: bool = False
 
 
 class WebhookPayload(BaseModel):
