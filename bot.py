@@ -127,11 +127,16 @@ def filter_new_listings(listings: list[Listing]) -> list[Listing]:
         return listings
 
     urls = [listing.url for listing in listings if listing.url]
+    logger.info(f"{urls}")
     if not urls:
         return listings
 
     db = SessionLocal()
     try:
+        # Print all urls in the database currently
+        all_urls = [row[0] for row in db.query(DBListing.idealista_url).all()]
+        logger.info(f"All URLs in DB: {all_urls}")
+
         existing = db.query(DBListing.idealista_url).filter(
             DBListing.idealista_url.in_(urls)
         ).all()
