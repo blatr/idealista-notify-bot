@@ -7,7 +7,6 @@ import asyncio
 import logging
 import random
 import re
-from typing import Callable, Iterable
 from telegram import Bot, InlineKeyboardButton, InlineKeyboardMarkup
 from sqlalchemy import func
 
@@ -19,7 +18,6 @@ from config import (
     SCRAPE_INTERVAL_MAX,
 )
 from idealista.scraper import scrape_all_pages, load_seen_listings, Listing
-from watchlist import add_watch_url, load_watch_urls
 
 # Database integration for web CRM
 try:
@@ -130,10 +128,6 @@ def _extract_idealista_urls(text: str) -> list[str]:
     return urls
 
 
-def _get_watch_urls(urls: Iterable[str]) -> list[str]:
-    return sorted(set(urls))
-
-
 def format_message(listing: Listing) -> str:
     """Format a listing for Telegram."""
     return (
@@ -229,7 +223,7 @@ async def check_and_notify(
 async def run_scraper_loop(
     bot: Bot,
     stop_event: asyncio.Event,
-    get_urls: Callable[[], list[str]],
+    base_url: str | None = None,
     chat_id: str | int = TELEGRAM_CHAT_ID,
     lock: asyncio.Lock | None = None,
 ) -> None:
@@ -238,20 +232,13 @@ async def run_scraper_loop(
 
     while not stop_event.is_set():
         try:
-            urls = get_urls()
+            if lock:
+                async with lock:
+                    await check_and_notify(bot, base_url=base_url, chat_id=chat_id)
+            else:
+                await check_and_notify(bot, base_url=base_url, chat_id=chat_id)
         except Exception as exc:
-            logger.error(f"Failed to load watch URLs: {exc}")
-            urls = []
-
-        for url in urls:
-            try:
-                if lock:
-                    async with lock:
-                        await check_and_notify(bot, base_url=url, chat_id=chat_id)
-                else:
-                    await check_and_notify(bot, base_url=url, chat_id=chat_id)
-            except Exception as exc:
-                logger.error(f"Error checking URL {url}: {exc}")
+            logger.error(f"Error checking URL {base_url}: {exc}")
 
         delay = (
             SCRAPE_INTERVAL_MIN
@@ -278,28 +265,11 @@ async def _scrape_now(
         )
 
 
-async def _handle_message(bot: Bot, message, watch_urls: set[str], lock: asyncio.Lock) -> None:
+async def _handle_message(bot: Bot, message, lock: asyncio.Lock) -> None:
     if not message or not message.text:
         return
 
     logger.info(f"Received message: {message.text}")
-    # chat_id = message.chat_id
-    # urls = _extract_idealista_urls(message.text)
-    # if not urls:
-    #     await bot.send_message(
-    #         chat_id=chat_id,
-    #         text="Send me an Idealista link to track.",
-    #     )
-    #     return
-
-    # for url in urls:
-    #     added = add_watch_url(watch_urls, url)
-    #     if added:
-    #         await bot.send_message(chat_id=chat_id, text=f"Added to watch list:\n{url}")
-    #     else:
-    #         await bot.send_message(chat_id=chat_id, text=f"Already watching:\n{url}")
-
-    #     asyncio.create_task(_scrape_now(bot, url, chat_id, lock))
 
 
 async def _handle_callback(bot: Bot, callback_query, lock: asyncio.Lock = None) -> None:
@@ -346,7 +316,6 @@ async def _handle_callback(bot: Bot, callback_query, lock: asyncio.Lock = None) 
 async def run_polling(
     bot: Bot,
     stop_event: asyncio.Event,
-    watch_urls: set[str],
     lock: asyncio.Lock,
 ) -> None:
     offset = None
@@ -359,7 +328,7 @@ async def run_polling(
                     await _handle_callback(bot, update.callback_query, lock)
                     continue
                 message = update.message or update.edited_message
-                await _handle_message(bot, message, watch_urls, lock)
+                await _handle_message(bot, message, lock)
         except Exception as exc:
             logger.error(f"Polling error: {exc}")
             await asyncio.sleep(2)
@@ -373,7 +342,6 @@ async def main():
         return
 
     bot = Bot(token=TELEGRAM_BOT_TOKEN)
-    watch_urls = load_watch_urls()
     scrape_lock = asyncio.Lock()
     stop_event = asyncio.Event()
 
@@ -382,14 +350,14 @@ async def main():
     )
     logger.info(f"Search URL: {IDEALISTA_URL}")
 
-    polling_task = asyncio.create_task(run_polling(bot, stop_event, watch_urls, scrape_lock))
+    polling_task = asyncio.create_task(run_polling(bot, stop_event, scrape_lock))
 
     if TELEGRAM_CHAT_ID:
         scraper_task = asyncio.create_task(
             run_scraper_loop(
                 bot,
                 stop_event,
-                lambda: _get_watch_urls(watch_urls),
+                base_url=IDEALISTA_URL,
                 chat_id=TELEGRAM_CHAT_ID,
                 lock=scrape_lock,
             )
