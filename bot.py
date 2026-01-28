@@ -294,18 +294,13 @@ async def check_and_notify(
     """Check for new listings and send notifications."""
     logger.info("Checking for new listings...")
 
-    listings, error = scrape_all_pages(base_url)
+    listings, error = scrape_all_pages(base_url, dedupe_fn=filter_new_listings)
 
     if error:
         logger.error("Scraping failed")
         return
 
     if listings:
-        listings = filter_new_listings(listings)
-        if not listings:
-            logger.info("No new listings (all already in DB)")
-            return
-
         logger.info(f"Found {len(listings)} new listings, sending...")
         # Save to web CRM database
         saved = []

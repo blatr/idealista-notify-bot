@@ -284,6 +284,7 @@ def scrape_all_pages(
     base_url: str = None,
     max_pages: int = 3,
     min_new_to_continue: int = 25,
+    dedupe_fn=None,
 ) -> tuple[list[Listing], bool]:
     """
     Scrape multiple pages of listings.
@@ -292,6 +293,7 @@ def scrape_all_pages(
         base_url: Base search URL
         max_pages: Maximum number of pages to scrape
         min_new_to_continue: Only continue pagination if page has more than this count
+        dedupe_fn: Optional callback to filter out already-known listings per page
 
     Returns:
         Tuple of (list of all new listings found, error_occurred flag)
@@ -313,6 +315,12 @@ def scrape_all_pages(
             logger.warning(f"Error on page {page}, stopping pagination")
             error_occurred = True
             break
+
+        if dedupe_fn:
+            try:
+                listings = dedupe_fn(listings)
+            except Exception as exc:
+                logger.error(f"Failed to dedupe listings: {exc}")
 
         all_listings.extend(listings)
 
