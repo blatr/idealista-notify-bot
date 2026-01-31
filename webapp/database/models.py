@@ -21,6 +21,7 @@ class Listing(Base):
     floor = Column(String)
     description = Column(Text)
     thumbnail = Column(String)
+    telephone = Column(String)
 
     # CRM fields
     stage = Column(String, default="preliminary", index=True)
@@ -46,6 +47,7 @@ class Listing(Base):
             "floor": self.floor,
             "description": self.description,
             "thumbnail": self.thumbnail,
+            "telephone": self.telephone,
             "stage": self.stage,
             "notes": self.notes,
             "position": self.position,

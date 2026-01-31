@@ -39,6 +39,14 @@
         {% endif %}
     </div>
 
+    <!-- Telephone -->
+    {% if listing.telephone %}
+    <div class="text-xs text-gray-600 mb-2 flex items-center gap-1">
+        <span>📞</span>
+        <span>{{ listing.telephone }}</span>
+    </div>
+    {% endif %}
+
     {% if listing.idealista_url %}
     {% set url_id = listing.idealista_url.rstrip('/').split('/')[-1] %}
     <div class="mb-2">

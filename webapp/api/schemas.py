@@ -14,6 +14,7 @@ class ListingBase(BaseModel):
     floor: Optional[str] = None
     description: Optional[str] = None
     thumbnail: Optional[str] = None
+    telephone: Optional[str] = None
     idealista_url: Optional[str] = None
     notes: Optional[str] = None
 
@@ -36,6 +37,7 @@ class ListingUpdate(BaseModel):
     floor: Optional[str] = None
     description: Optional[str] = None
     thumbnail: Optional[str] = None
+    telephone: Optional[str] = None
     idealista_url: Optional[str] = None
     notes: Optional[str] = None
     priority: Optional[int] = None
@@ -87,5 +89,6 @@ class WebhookPayload(BaseModel):
     floor: Optional[str] = None
     description: Optional[str] = None
     thumbnail: Optional[str] = None
+    telephone: Optional[str] = None
     idealista_url: Optional[str] = None
     source: str = "telegram"
