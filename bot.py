@@ -222,12 +222,14 @@ def _extract_idealista_urls(text: str) -> list[str]:
 
 def format_message(listing: Listing) -> str:
     """Format a listing for Telegram."""
+    phone_line = f"📞 {listing.telephone}\n" if listing.telephone else ""
     return (
         f"🏠 *{listing.title}*\n\n"
         f"💰 *{listing.price}*\n"
         f"🛏 {listing.rooms}\n"
         f"📐 {listing.size}\n"
-        f"🏢 {listing.floor}\n\n"
+        f"🏢 {listing.floor}\n"
+        f"{phone_line}\n"
         f"[Ver anuncio]({listing.url})"
     )
 

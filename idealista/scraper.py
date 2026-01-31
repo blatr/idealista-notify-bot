@@ -75,6 +75,7 @@ class Listing:
     floor: str
     description: str
     thumbnail: str = ""
+    telephone: str = ""
 
 
 def load_seen_listings() -> set:
